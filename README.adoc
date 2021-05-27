@@ -1,4 +1,4 @@
-= OpenShift Container Platform (OCP) related playbooks
+= OpenShift Container Platform (OCP) related ansible roles
 
 These playbooks are meant to assist with creating OpenShift Platform objects in an automated way. Please checkout the `roles/` folder for management of individual features of the platform, while playbooks with various combinations of these roles are managed in this directory. This repo is menat as example only and not meant to be an endorsement of any one method or technology. In these example we use HashiCorp Vault for secret management however that does not mean that this is the only way to handle secrets. It is not even meant to imply that it is the preferred secret store, it just happens to be free/low cost, easy to use, and quick to setup. The same goes for vSphere... please feel free to use the examples as is or adapt them to fit your needs.
 
