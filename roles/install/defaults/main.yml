@@ -1,0 +1,11 @@
+---
+# defaults file for install
+
+# Defaults - Only change as needed for your environment
+
+ocp_baseDomain: "example.com"
+ocp_cluster: ocp4
+clean_install_dir: true
+install: false
+ocp_worker_replicas: 2
+ocp_master_replicas: 3

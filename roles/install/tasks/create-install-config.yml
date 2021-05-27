@@ -1,0 +1,23 @@
+---
+- name: Remove old install dir if it exists
+file:
+  path: "{{ install_dir_path }}"
+  state: absent
+when: clean_install_dir|bool
+
+- name: Check that the install dir exists
+stat:
+  path: "{{ install_dir_path }}"
+register: install_dir_stat
+
+- name: Create install dir
+file:
+  path: "{{ install_dir_path }}"
+  state: directory
+when: not install_dir_stat.stat.exists
+
+- name: Create openshift install file
+template:
+  src: "roles/install/templates/install-config.yaml.j2"
+  dest: "{{ install_dir_path }}/install-config.yaml"
+with_dict: "{{ocp_imageContentSources}}"

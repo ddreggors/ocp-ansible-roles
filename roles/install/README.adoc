@@ -1,0 +1,196 @@
+= The install playbook
+
+This role aims to be a complete installer that uses hashicorp vault to store secrets like the ssh key, certificates, and passwords for VCSA
+
+TIP: The example playbook uses HashiCorp Vault but there are many ways to handle secrets. Feel free to adapt to your own preferred method for handling secrets.
+
+
+== Role Variables
+
+
+.Variables
+[%header,cols=4]
+|===
+| Variable
+| Purpose
+| Default Value
+| Required
+
+| install_dir_path
+| The path to use for install logs and generated files
+| ./install
+| No
+
+| clean_install_dir
+| Clean the install dir
+| true
+| No
+
+| ocp_baseDomain
+| The base domain as seen in DNS A records (without cluster name)
+| example.com
+| No footnote:[Not required, but obviously should be changed or overridden in playbook or command line vars to match your local domain.]
+
+| ocp_worker_replicas
+| The number of workers to spin up
+| 2
+| No
+
+| ocp_master_replicas
+| The number of master to spin up
+| 3
+| No
+
+| ocp_cluster
+| The name of the cluster (will also become the subdomain in DNS)
+| ocp4
+| No
+
+| ocp_apiVIP
+| The IP address of the API vip
+| None
+| Yes
+
+| ocp_ingressVIP
+| The IP address of ingress VIP
+| None
+| Yes
+
+| vcsa_cluster
+| The name of the vCenter cluster as defined in vCenter
+| None
+| Yes
+
+| vcsa_datacenter
+| The name of the datacenter as defined in vCenter
+| None
+| Yes
+
+| vcsa_defaultDatastore
+| The default data store to use in vCenter
+| None
+| Yes
+
+| vcsa_network
+| The network defined in vCenter for use with the OCP nodes
+| None
+| Yes
+
+| vcsa_username
+| The username to use to authenticate to your vCenter
+| None
+| Yes
+
+| vcsa_url
+| The url to your vCenter host
+| None
+| Yes
+
+| additionalTrustBundle
+| Any local registries you would prefer to pull images from
+| None
+| No footnote:[See notes on additionalTrustBundle]
+
+| ocp_imageContentSources
+| Any local registries you would prefer to pull images from
+| None
+| No footnote:[See notes on ocp_imageContentSources]
+
+| install
+| Determine if we should do the install or not
+| false
+| No footnote:[Not setting this to true in extra vars or vars file will cause the play to be a dry run so you can inspect the install-config.yaml first]
+
+| vtoken
+| The token to use for the vault
+| None
+| Yes footnote:[This should be passed as an extra var on command line or included as an environment variable not hardcoded in your playbook]
+
+
+
+|===
+
+
+== Dependencies
+
+.requirements.txt
+----
+hvac
+Jinja2
+----
+
+== The vault secrets
+
+The secrets we used were added in the following manner
+
+----
+$ vault kv put secret/ocp4/ca-bundle cert=@/path/to/certificate-bundle)
+$ vault kv put secret/ocp4/sshKey key=@/path/to/id_rsa.pub)
+$ vault kv put secret/ocp4/pullSecret auths=@/path/to/pull-secret.txt)
+$ vault kv put secret/ocp4/vcsa_password pass=MyS3cr3tp@ssw0rd)
+----
+
+NOTE: It is not the scope of this document to teach how to setup or use HashiCorp Vault, but examples are nice :-)
+
+IMPORTANT: The `secret/ocp4` prefix in each secret above assumes that you left your secret engine named `secret` and want to use the sub path `ocp4` to keep secrets separated by use case.
+
+== Example playbook
+
+----
+---
+- hosts: localhost
+  tasks:
+
+  - name: Call install role
+    include_role:
+      name: install
+    vars:
+      = Override vars here as needed
+      install_dir_path: "./install"
+      ocp_baseDomain: "example.com"
+      ocp_worker_replicas: 2
+      ocp_master_replicas: 3
+      ocp_cluster: "ocp4"
+      ocp_apiVIP: "192.168.4.120"
+      ocp_ingressVIP: "192.168.4.121"
+      vcsa_cluster: "home-lab"
+      vcsa_datacenter: "home-dc"
+      vcsa_defaultDatastore: "datastore2"
+      vcsa_network: "VM Network"
+      vcsa_url: "vcsa.example.com"
+      vcsa_username: "administrator@example.com"
+
+      vault_path_prefix: 'secret/ocp4'
+      vault_url: "http://vault.example.com:8200"
+      additionalTrustBundle: "{{ lookup('hashi_vault', 'secret=' + vault_path_prefix + '/ca-bundle:cert token={{ vtoken }} url=' + vault_url).replace('\\n', '\n') }}"
+      sshKey: "{{ lookup('hashi_vault', 'secret=' + vault_path_prefix + '/sshKey:key token={{ vtoken }} url=' + vault_url).replace('\\n', '\n') }}"
+      pullSecret: "{{ lookup('hashi_vault', 'secret=' + vault_path_prefix + '/pullSecret:auths token={{ vtoken }} url=' + vault_url)|string }}"
+      vcsa_password: "{{ lookup('hashi_vault', 'secret=' + vault_path_prefix + '/vcsa_password:pass token={{ vtoken }} url=' + vault_url) }}"
+
+      ocp_imageContentSources:
+        myregistry.example.com/ocp4/openshift4:
+          - quay.io/openshift-release-dev/ocp-release
+          - quay.io/openshift-release-dev/ocp-v4.0-art-dev
+----
+
+NOTE: The ocp_imageContentSources var should be formatted as a dict with a single key of your registry url and a value that is a list of sources it mirrors
+
+NOTE: The additionalTrustBundle also option and can easily be included as a file lookup in your files folder or read from a vault as listed have here.
+
+
+To just create the install config and not run the install:
+
+`ansible-playbook ./main.yaml -e vtoken=<your vault token>`
+
+To create the install config, and proceed with install:
+
+`ansible-playbook ./main.yaml -e vtoken=<your vault token> -e install=true`
+
+
+== License
+
+Apache License 2.0
+
+== Author Information
+
+mailto:ddreggor@redhat.com[David Dreggors] <ddreggor@redhat.com>

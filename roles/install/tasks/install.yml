@@ -1,0 +1,13 @@
+---
+- block:
+  
+- name: Cluster install
+  shell: |
+    openshift-install --dir install create cluster
+  register: install_log
+
+rescue:
+
+- name: Show log
+  debug:
+    msg: "{{ install_log.stderr }}"

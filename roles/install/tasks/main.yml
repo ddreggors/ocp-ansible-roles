@@ -1,0 +1,9 @@
+---
+# tasks file for install
+
+- name: Create the install config
+  include: "create-install-config.yml"
+
+- name: Install OpenShift
+  include: install.yml
+  when: install|bool
