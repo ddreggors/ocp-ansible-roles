@@ -100,6 +100,7 @@ IMPORTANT: The `secret/ocp4` prefix in each secret above assumes that you left y
 
 IMPORTANT: All variables required by the role need to be defined in the playbook or extra vars.
 
+NOTE: There are other receivers that can be added to alertmanager like https://prometheus.io/docs/alerting/latest/configuration/#pagerduty_config[Pager Duty] and https://prometheus.io/docs/alerting/latest/configuration/#victorops_config[VictorOps]. It is a simple matter to update the template here in this role to use these and others.
 
 == License
 
