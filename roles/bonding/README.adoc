@@ -2,6 +2,14 @@
 
 This role will create machine config files to setup ethernet bonding on cluster nodes. This can easily be modified to directly apply these machine configs, however it is often preferred to add these machine configs at install time so writing to a file for injecting into install manifests was the goal here.
 
+The files it creates on the node are a NetworkManager config file, script that builds bonding configuration at run time, and a systemd unit file that runs at boot time that calls the script.
+
+The main reason we don't just build the network config files locally and add them directly inside the machine config is that we don't have access to the MAC addresses of the network cards on the node to set the DHCP_CLIENT_ID in the config file.
+
+`Why do we need that?`
+
+Simple, the bond device will by default send the MAC address of the active network card which often changes on boot. This will interfere with your DHCP host assigning the same IP to your nodes on reboot if you setup bonding and do not tell the bond device to always send the same MAC address.
+
 == Requirements
 
 - Appropriate variables setup in playbook
@@ -17,7 +25,7 @@ See `Example Playbook` below for more specific details on global vars. At a high
   * `destination`: Where to create the machine config files (-e destination=./out)
   * `type`: [OPTIONAL] The type of node to create machine configs for, default is all
 
-NOTE: Type corresponds to the parent keys in the config file passed. (master, worker, etc...)
+NOTE: The `type` variable corresponds to the parent keys in the config file passed. The key is the nodes node role (master, worker, etc...) as defined in the cluster.
 
 == Dependencies
 
@@ -28,7 +36,7 @@ Jinja2
 ----
 
 
-.Example config file
+== Example config file
 
 ----
 {
@@ -77,7 +85,7 @@ Jinja2
 }
 ----
 
-.Example Playbook
+== Example Playbook
 ----
 ---
 - hosts: localhost
@@ -114,8 +122,16 @@ Jinja2
     when: do_all is defined
 ----
 
-NOTE: The playbook must define all required variables before running this playbook
+== Running the example playbook
 
+This example playbook requires a destination folder to build machine configs in, and a json config file the describes the nodes types (matching the node labels for role) to configure bonding on and the bonding configurations.
+
+TIP: The playbook must define all required variables or you can pass them as extra vars on the command line. Either way, the role will will fail without these variables set.
+
+.Example run
+----
+ansible-playbook -e destination=./out -e config=./config.json main.yml
+----
 
 == License
 
