@@ -1,7 +1,9 @@
 = alertmanager
 
 
-This role will update the alertmanager secret in OpenShift to a working configuration.
+This role will update the alertmanager secret in OpenShift to a working configuration. This example is just to setup email alerts but there are other services that can be configured here.
+
+https://prometheus.io/docs/alerting/latest/configuration/[See Prometheus's alertmanager configuration guide for more details.]
 
 == Requirements
 
